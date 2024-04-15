@@ -1,5 +1,6 @@
 
-import random
+
+# from collections import namedtuple
 
 DIR_STOP = 0
 DIR_UP = 1
@@ -8,6 +9,58 @@ DIR_LEFT = 3
 DIR_RIGHT = 4
 
 EARTH_UNREACHABLE = 1
+# Person = namedtuple('Person', ['x', 'y', 'suger', 'age', 'live', 'direction'])
+PerViewMoudle = {'earth', 'suger', 'pop'}
+class Person:
+    def __init__(self,x=0,y=0,suger=0,age=0,live=False,direction=DIR_STOP):
+        self._x = x
+        self._y = y
+        self._suger = suger
+        self._age = age
+        self._live = live
+        self._direction = direction
+
+    @property
+    def x(self):
+        return self._x
+    @x.setter
+    def x(self, value):
+        self._x = value
+    @property
+    def y(self):
+        return self._y
+    @y.setter
+    def y(self, value):
+        self._y = value
+    @property
+    def suger(self):
+        return self._suger
+    @suger.setter
+    def suger(self, value):
+        self._suger = value
+    @property
+    def age(self):
+        return self._age
+    @age.setter
+    def age(self, value):
+        self._age = value
+    @property
+    def live(self):
+        return self._live
+    @live.setter
+    def live(self, value):
+        self._live = value
+    @property
+    def direction(self):
+        return self._direction
+    @direction.setter
+    def direction(self, value):
+        self._direction = value
+
+
+
+import random
+
 
 class SugerEmpire:
     def __init__(self, xlen=100, ylen=100,sn=100,pop=10,sight=5):
@@ -17,14 +70,9 @@ class SugerEmpire:
         self.surger = [[0 for _ in range(self.xlen)] for _ in range(self.ylen)]  # 地图 糖
         self.sn = sn # 糖的数量
         self.pop = pop # 人口数量
-        person = {"x":0,"y":0,"suger":0,"age":0,"live":False,"direction":DIR_STOP}
-        self.persons = [person for _ in range(self.pop)] # 人口列表
+        self.persons = [Person() for _ in range(self.pop)] # 人口列表
         self.popmap = [[0 for _ in range(self.xlen)] for _ in range(self.ylen)]  # 地图 人口
-        self.sight = sight # 视野
-        view = [[0 for _ in range(self.sight*2+1)] for _ in range(self.sight*2+1)]  #视野
-        popvi = {"earth":view,"suger":view,"pop":view}
-        self.view_module = popvi
-        # self.views = [popvi for _ in range(self.pop)] # 视野列表
+        self.sight = sight # 视野距离
         pass
     def step(self, *args, **kwargs):
         # 在这里实现step函数的逻辑
@@ -43,19 +91,19 @@ class SugerEmpire:
                 x = random.randint(0, self.xlen-1)
                 y = random.randint(0, self.ylen-1)
                 if self.popmap[x][y] == 0:
-                    self.popmap[x][y] = i
-                    self.persons[i]["x"] = x
-                    self.persons[i]["y"] = y
+                    self.popmap[x][y] = i+1
+                    self.persons[i].x = x
+                    self.persons[i].y = y
                     break
-            self.persons[i]["live"] = True
+            self.persons[i].live = True
         pass
     
     def check_pop(self):
         # 确定每个活人都在自己的位置
         for i in range(self.pop):
-            if(self.persons[i]["live"]):
-                x = self.persons[i]["x"]
-                y = self.persons[i]["y"]
+            if(self.persons[i].live):
+                x = self.persons[i].x
+                y = self.persons[i].y
                 if self.popmap[x][y] != i:
                     print("pop error:" + str(i) + " not in " + str(x) + " " + str(y))
         # 确定每个有人的位置都是活人
@@ -63,7 +111,7 @@ class SugerEmpire:
             for y in range(sec.ylen):
                 if self.popmap[x][y] != 0:
                     pnum = self.popmap[x][y]
-                    if(self.persons[pnum]["live"] != True):
+                    if(self.persons[pnum].live != True):
                         print("pop error:" + str(pnum) + " not live in " + str(x) + " " + str(y))
         pass
 
@@ -75,11 +123,11 @@ class SugerEmpire:
         # 在这里实现close函数的逻辑
         pass
     
-    def sugermap(self):
+    def sugermapf(self):
         return self.surger
         pass
     
-    def popmap(self):
+    def popmapf(self):
         return self.popmap
     
     def getview(self,person):
@@ -89,9 +137,12 @@ class SugerEmpire:
         '''
         if(person >= self.pop):
             return None
-        x = self.persons[person]["x"]
-        y = self.persons[person]["y"]
-        view = self.view_module
+        x = self.persons[person].x
+        y = self.persons[person].y
+        view = PerViewMoudle.copy()
+        view = {"earth":[[0 for _ in range(self.sight*2+1)] for _ in range(self.sight*2+1)], 
+                "suger":[[0 for _ in range(self.sight*2+1)] for _ in range(self.sight*2+1)], 
+                "pop":[[0 for _ in range(self.sight*2+1)] for _ in range(self.sight*2+1)]}
         for i in range(-self.sight,self.sight+1):
             for j in range(-self.sight,self.sight+1):
                 if x+i < 0 or x+i >= self.xlen or y+j < 0 or y+j >= self.ylen:
@@ -124,9 +175,13 @@ def button_reset():
     refresh_map()
     refresh_view()
     
-def refresh_map():
-    suger_map = sec.sugermap()
-    pop_map = sec.popmap
+def refresh_map(wp=0):
+    if(wp>sec.pop):
+        wpf = 0
+    else:
+        wpf = wp
+    suger_map = sec.sugermapf()
+    pop_map = sec.popmapf()
     main_map.delete("all")  # Clear the canvas
     main_map.create_rectangle(0, 0, MAP_WIDTH, MAP_HEIGHT, fill="white")
     xbit = MAP_WIDTH / sec.xlen
@@ -138,11 +193,27 @@ def refresh_map():
                 main_map.create_rectangle(x*xbit, y*ybit, (x+1)*xbit, (y+1)*ybit, fill="green")
             if pop_map[x][y] != 0:
                 main_map.create_rectangle(x*xbit, y*ybit, (x+1)*xbit, (y+1)*ybit, fill="red")
+    main_map.create_line((sec.persons[wpf].x-sec.sight) * xbit, (sec.persons[wpf].y-sec.sight) * ybit, 
+                         (sec.persons[wpf].x-sec.sight) * xbit, (sec.persons[wpf].y+sec.sight+1) * ybit, 
+                         fill="black")
+    main_map.create_line((sec.persons[wpf].x+sec.sight+1) * xbit, (sec.persons[wpf].y-sec.sight) * ybit, 
+                         (sec.persons[wpf].x+sec.sight+1) * xbit, (sec.persons[wpf].y+sec.sight+1) * ybit, 
+                         fill="black")
+    main_map.create_line((sec.persons[wpf].x-sec.sight) * xbit, (sec.persons[wpf].y-sec.sight) * ybit, 
+                         (sec.persons[wpf].x+sec.sight+1) * xbit, (sec.persons[wpf].y-sec.sight) * ybit, 
+                         fill="black")
+    main_map.create_line((sec.persons[wpf].x-sec.sight) * xbit, (sec.persons[wpf].y+sec.sight+1) * ybit, 
+                         (sec.persons[wpf].x+sec.sight+1) * xbit, (sec.persons[wpf].y+sec.sight+1) * ybit, 
+                         fill="black")
 
-def refresh_view():
+def refresh_view(wp=0):
+    if(wp>sec.pop):
+        wpf = 0
+    else:
+        wpf = wp
     view_map.delete("all")  # Clear the canvas
     view_map.create_rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT, fill="white")
-    view = sec.getview(0)  # Get the view for person 0
+    view = sec.getview(wpf)  # Get the view for person 0
     xbit = VIEW_WIDTH / (sec.sight * 2 + 1)
     ybit = VIEW_HEIGHT / (sec.sight * 2 + 1)
     for x in range(sec.sight * 2 + 1):
@@ -153,12 +224,11 @@ def refresh_view():
             if earth == EARTH_UNREACHABLE:
                 view_map.create_rectangle(x*xbit, y*ybit, (x+1)*xbit, (y+1)*ybit, fill="black")
             '''
+            '''
             if pop != 0:
                 view_map.create_rectangle(x * xbit, y * ybit, (x + 1) * xbit, (y + 1) * ybit, fill="red")
-            '''
             if suger != 0:
                 view_map.create_rectangle(x*xbit, y*ybit, (x+1)*xbit, (y+1)*ybit, fill="green")
-                # view_map.create_text((x + 0.5) * xbit, (y + 0.5) * ybit, text=str(suger))
     pass
 
 
